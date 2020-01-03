@@ -8,7 +8,7 @@ module.exports = {
 };
 
 function encode(val) {
-    return esapi.encoder().encodeForHtml(val);
+    return esapi.encoder().encodeForHTML(val);
 }
 
 function isObject(object) {
