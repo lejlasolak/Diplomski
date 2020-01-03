@@ -8,6 +8,9 @@ module.exports = {
 };
 
 function encode(val) {
+    if (typeof val !== 'string') {
+        return val;
+    }
     return esapi.encoder().encodeForHTML(val);
 }
 
