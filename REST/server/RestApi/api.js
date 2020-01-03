@@ -600,203 +600,204 @@ let RestApi = function () {
         },
 
         GetEmailsByPersonId: function (req, res) {
-
-            return db.Email.findAll({where: {osoba_id: req.params.id}})
-                .then(function (emails) {
-
-                    return res.status(200).json({emails: emails});
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error});
-                });
+            return db.Email.findAll({
+                where: {
+                    osoba_id: req.params.id
+                }
+            }).then(function (emails) {
+                return res.status(200).json({emails: emails});
+            }).catch(function (error) {
+                return res.status(500).json({error: error});
+            });
         },
 
         GetEmailsByStudentId: function (req, res) {
-
             let found = 0;
             let promises = [];
-
             return db.Privilegije.findAll({where: {osoba_id: req.params.id}})
                 .then(function (privilegije) {
-
-                    if (privilegije.length === 0) return res.status(404).json({error: "Nepostojeći korisnik"});
-
+                    if (privilegije.length === 0) {
+                        return res.status(404).json({error: "Nepostojeći korisnik"});
+                    }
                     for (let p in privilegije) {
-                        if (!privilegije.hasOwnProperty(p)) continue;
-
-                        promises.push(db.VrstaKorisnika.findOne({where: {id: privilegije[p].vrsta_korisnika_id}})
-                            .then(function (vrsta) {
-
-                                if (vrsta.naziv === "student") {
-                                    found = 1;
-                                }
-                            }));
+                        if (!privilegije.hasOwnProperty(p)) {
+                            continue;
+                        }
+                        promises.push(db.VrstaKorisnika.findOne({
+                            where: {
+                                id: privilegije[p].vrsta_korisnika_id
+                            }
+                        }).then(function (vrsta) {
+                            if (vrsta.naziv === "student") {
+                                found = 1;
+                            }
+                        }));
                     }
                     return Promise.all(promises).then(function () {
-
-                        if (found === 0) return res.status(404).json({error: "Student nije pronađen"});
-
-                        return db.Email.findAll({where: {osoba_id: req.params.id}})
-                            .then(function (emails) {
-
-                                return res.status(200).json({emails: emails});
-                            })
-                            .catch(function (error) {
-
-                                return res.status(500).json({error: error});
-                            });
+                        if (found === 0) {
+                            return res.status(404).json({error: "Student nije pronađen"});
+                        }
+                        return db.Email.findAll({
+                            where: {
+                                osoba_id: req.params.id
+                            }
+                        }).then(function (emails) {
+                            return res.status(200).json({emails: emails});
+                        }).catch(function (error) {
+                            return res.status(500).json({error: error});
+                        });
                     });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         GetLoggedInUserEmails: function (req, res) {
-
-            return db.Email.findAll({where: {osoba_id: res.userData.osoba_id}})
-                .then(function (emails) {
-
-                    return res.status(200).json({emails: emails});
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error});
-                });
+            return db.Email.findAll({
+                where: {
+                    osoba_id: res.userData.osoba_id
+                }
+            }).then(function (emails) {
+                return res.status(200).json({emails: emails});
+            }).catch(function (error) {
+                return res.status(500).json({error: error});
+            });
         },
 
         GetExamByExamPointsId: function (req, res) {
-
-            return db.IspitBodovi.findOne({where: {id: req.params.id}})
-                .then(function (bodovi) {
-
-                    if (!bodovi) return res.status(404).json({error: "Bodovi nisu pronađeni"});
-
-                    return db.Ispit.findOne({where: {id: bodovi.ispit_id}})
-                        .then(function (ispit) {
-
-                            if (!ispit) return res.status(404).json({error: "Ispit nije pronađen"});
-
-                            return res.status(200).json({ispit: ispit});
-                        });
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error});
+            return db.IspitBodovi.findOne({
+                where: {
+                    id: req.params.id
+                }
+            }).then(function (bodovi) {
+                if (!bodovi) {
+                    return res.status(404).json({error: "Bodovi nisu pronađeni"});
+                }
+                return db.Ispit.findOne({
+                    where: {
+                        id: bodovi.ispit_id
+                    }
+                }).then(function (ispit) {
+                    if (!ispit) {
+                        return res.status(404).json({error: "Ispit nije pronađen"});
+                    }
+                    return res.status(200).json({ispit: ispit});
                 });
+            }).catch(function (error) {
+                return res.status(500).json({error: error});
+            });
         },
 
         GetHomeworkByHomeworkPointsId: function (req, res) {
-
-            return db.SpiralaBodovi.findOne({where: {id: req.params.id}})
-                .then(function (bodovi) {
-
-                    if (!bodovi) return res.status(404).json({error: "Bodovi nisu pronađeni"});
-
-                    return db.Spirala.findOne({where: {id: bodovi.spirala_id}})
-                        .then(function (spirala) {
-
-                            if (!spirala) return res.status(404).json({error: "Spirala nije pronađen"});
-
-                            return res.status(200).json({spirala: spirala});
-                        });
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error});
+            return db.SpiralaBodovi.findOne({
+                where: {
+                    id: req.params.id
+                }
+            }).then(function (bodovi) {
+                if (!bodovi) {
+                    return res.status(404).json({error: "Bodovi nisu pronađeni"});
+                }
+                return db.Spirala.findOne({
+                    where: {
+                        id: bodovi.spirala_id
+                    }
+                }).then(function (spirala) {
+                    if (!spirala) {
+                        return res.status(404).json({error: "Spirala nije pronađen"});
+                    }
+                    return res.status(200).json({spirala: spirala});
                 });
+            }).catch(function (error) {
+                return res.status(500).json({error: error});
+            });
         },
 
         GetStudentByExamPointsId: function (req, res) {
-
-            return db.IspitBodovi.findOne({where: {id: req.params.id}})
-                .then(function (bodovi) {
-
-                    if (!bodovi) return res.status(404).json({error: "Bodovi nisu pronađeni"});
-
-                    return db.Osoba.findOne({where: {id: bodovi.student_id}})
-                        .then(function (osoba) {
-
-                            if (!osoba) return res.status(404).json({error: "Student nije pronađen"});
-
-                            return res.status(200).json({student: osoba});
-                        });
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error});
+            return db.IspitBodovi.findOne({
+                where: {
+                    id: req.params.id
+                }
+            }).then(function (bodovi) {
+                if (!bodovi) {
+                    return res.status(404).json({error: "Bodovi nisu pronađeni"});
+                }
+                return db.Osoba.findOne({
+                    where: {
+                        id: bodovi.student_id
+                    }
+                }).then(function (osoba) {
+                    if (!osoba) {
+                        return res.status(404).json({error: "Student nije pronađen"});
+                    }
+                    return res.status(200).json({student: osoba});
                 });
+            }).catch(function (error) {
+                return res.status(500).json({error: error});
+            });
         },
 
         GetStudentByHomeworkPointsId: function (req, res) {
-
             return db.SpiralaBodovi.findOne({where: {id: req.params.id}})
                 .then(function (bodovi) {
-
-                    if (!bodovi) return res.status(404).json({error: "Bodovi nisu pronađeni"});
-
+                    if (!bodovi) {
+                        return res.status(404).json({error: "Bodovi nisu pronađeni"});
+                    }
                     return db.Osoba.findOne({where: {id: bodovi.student_id}})
                         .then(function (osoba) {
-
-                            if (!osoba) return res.status(404).json({error: "Student nije pronađen"});
-
+                            if (!osoba) {
+                                return res.status(404).json({error: "Student nije pronađen"});
+                            }
                             return res.status(200).json({student: osoba});
                         });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         GetPersonByEmailId: function (req, res) {
-
             return db.Email.findOne({where: {id: req.params.id}})
                 .then(function (email) {
-
-                    if (!email) return res.status(404).json({error: "E-mail nije pronađen"});
-
+                    if (!email) {
+                        return res.status(404).json({error: "E-mail nije pronađen"});
+                    }
                     return db.Osoba.findOne({where: {id: email.osoba_id}})
                         .then(function (osoba) {
-
-                            if (!osoba) return res.status(404).json({error: "Korisnik nije pronađen"});
-
+                            if (!osoba) {
+                                return res.status(404).json({error: "Korisnik nije pronađen"});
+                            }
                             return res.status(200).json({korisnik: osoba});
                         });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         GetPersonByAccountId: function (req, res) {
-
             return db.Nalog.findOne({where: {id: req.params.id}})
                 .then(function (nalog) {
-
-                    if (!nalog) return res.status(404).json({error: "Nalog nije pronađen"});
-
+                    if (!nalog) {
+                        return res.status(404).json({error: "Nalog nije pronađen"});
+                    }
                     return db.Osoba.findOne({where: {id: nalog.osoba_id}})
                         .then(function (osoba) {
-
-                            if (!osoba) return res.status(404).json({error: "Korisnik nije pronađen"});
-
+                            if (!osoba) {
+                                return res.status(404).json({error: "Korisnik nije pronađen"});
+                            }
                             return res.status(200).json({korisnik: osoba});
                         });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         Login: function (req, res) {
-            if (!req.body.username || !req.body.password)
+            if (!req.body.username || !req.body.password) {
                 return res.status(422).json({error: "Neispravni parametri"});
-
+            }
             return db.Nalog.findOne({where: {username: req.body.username}})
                 .then(function (user) {
                     if (!user) {
@@ -829,13 +830,10 @@ let RestApi = function () {
                                 return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
                             });
                     }
-
                     let vrste = [];
                     let promises = [];
-
                     db.Privilegije.findAll({where: {osoba_id: user.osoba_id}})
                         .then(function (privilegije) {
-
                             if (privilegije.length === 0) {
                                 res.locals.rateLimiter.consume(req.ip)
                                     .then(() => {
@@ -855,10 +853,8 @@ let RestApi = function () {
                                     })
                                 );
                             }
-
                             Promise.all(promises)
                                 .then(function () {
-
                                     const token = jwt.sign(
                                         {
                                             username: user.username,
@@ -869,7 +865,6 @@ let RestApi = function () {
                                         process.env.JWT_KEY,
                                         {expiresIn: "1h"}
                                     );
-
                                     res.locals.rateLimiter.delete(req.ip)
                                         .then(() => {
                                             return res.status(200).json({
@@ -883,16 +878,14 @@ let RestApi = function () {
         },
 
         GetAccountByPersonId: function (req, res) {
-
             return db.Nalog.findOne({where: {osoba_id: req.params.id}})
                 .then(function (nalog) {
-
-                    if (!nalog) return res.status(404).json({error: "Nalog nije pronađen"});
-
+                    if (!nalog) {
+                        return res.status(404).json({error: "Nalog nije pronađen"});
+                    }
                     return res.status(200).json({nalog: nalog});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -1146,10 +1139,10 @@ let RestApi = function () {
         },
 
         GetPrivilegeById: function (req, res) {
-
             RestApi.GetWholePrivilege(req.params.id, function (privilege, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(status).json({privilegija: privilege});
             });
         },
@@ -1282,20 +1275,15 @@ let RestApi = function () {
         },
 
         CreateOneComment: function (podaci) {
-
             return db.Komentar.create(podaci)
                 .then(function (kom) {
-
                     podaci.komentar_id = kom.id;
-
                     return db.Review.create(podaci);
                 })
                 .then(function (rev) {
-
                     return "Uspješno kreiran komentar";
                 })
                 .catch(function (err) {
-
                     return err.message;
                 });
         },
@@ -1494,13 +1482,13 @@ let RestApi = function () {
         },
 
         CreateReport: function (req, res) {
-
-            if (!req.body.spirala_id || !req.body.student_id)
+            if (!req.body.spirala_id || !req.body.student_id) {
                 res.status(400).json({error: "Neispravni parametri"});
-
+            }
             RestApi.CreateReportForOneStudent(req.body, function (message, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(status).json({message: message});
             });
         },
@@ -1680,42 +1668,34 @@ let RestApi = function () {
         },
 
         GetExamPoints: function (req, res) {
-
             db.IspitBodovi.findAll()
                 .then(function (bodovi) {
-
                     return res.status(200).json({bodovi: bodovi});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetHomeworkPoints: function (req, res) {
-
             db.SpiralaBodovi.findAll()
                 .then(function (bodovi) {
-
                     return res.status(200).json({bodovi: bodovi});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetHomeworkPointsById: function (req, res) {
-
             db.SpiralaBodovi.findOne({where: {id: req.params.id}})
                 .then(function (bod) {
-
-                    if (!bod) return res.status(404).json({error: "Nisu pronađeni bodovi"});
-
+                    if (!bod) {
+                        return res.status(404).json({error: "Nisu pronađeni bodovi"});
+                    }
                     return res.status(200).json({bodovi: bod});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -1987,57 +1967,43 @@ let RestApi = function () {
         },
 
         GetExamPointsByStudentId: function (req, res) {
-
             db.IspitBodovi.findAll({where: {student_id: req.params.id}})
                 .then(function (bodovi) {
-
                     return res.status(200).json({bodovi: bodovi});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetHomeworkPointsByStudentId: function (req, res) {
-
             db.SpiralaBodovi.findAll({where: {student_id: req.params.id}})
                 .then(function (bodovi) {
-
                     return res.status(200).json({bodovi: bodovi});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetMyExamPoints: function (req, res) {
-
             //id prijavljene osobe je u res.userData.osoba_id jer se spremi pomocu jwt
-
             db.IspitBodovi.findAll({where: {student_id: res.userData.osoba_id}})
                 .then(function (bodovi) {
-
                     return res.status(200).json({bodovi: bodovi});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetMyHomeworkPoints: function (req, res) {
-
             //id prijavljene osobe je u res.userData.osoba_id jer se spremi pomocu jwt
-
             db.SpiralaBodovi.findAll({where: {student_id: res.userData.osoba_id}})
                 .then(function (bodovi) {
-
                     return res.status(200).json({bodovi: bodovi});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -2077,14 +2043,11 @@ let RestApi = function () {
         },
 
         GetExams: function (req, res) {
-
             db.Ispit.findAll()
                 .then(function (ispiti) {
-
                     return res.status(200).json({ispiti: ispiti});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -2405,14 +2368,11 @@ let RestApi = function () {
         },
 
         GetSemesters: function (req, res) {
-
             db.Semestar.findAll()
                 .then(function (semestri) {
-
                     return res.status(200).json({semestri: semestri});
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
@@ -2454,40 +2414,31 @@ let RestApi = function () {
         },
 
         GetGroupsBySemesterId: function (req, res) {
-
             return db.Grupa.findAll({where: {semestar_id: req.params.id}})
                 .then(function (grupe) {
-
                     return res.status(200).json({grupe: grupe});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetExamsBySemesterId: function (req, res) {
-
             return db.Ispit.findAll({where: {semestar_id: req.params.id}})
                 .then(function (ispiti) {
-
                     return res.status(200).json({ispiti: ispiti});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetHomeworksBySemesterId: function (req, res) {
-
             return db.Spirala.findAll({where: {semestar_id: req.params.id}})
                 .then(function (spirale) {
-
                     return res.status(200).json({spirale: spirale});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -2564,10 +2515,10 @@ let RestApi = function () {
         },
 
         GetReportById: function (req, res) {
-
             RestApi.GetWholeReport(req.params.id, function (report, status, error) {
-
-                if (error) res.status(status).json({error: error});
+                if (error) {
+                    res.status(status).json({error: error});
+                }
                 return res.status(status).json({izvjestaj: report});
             });
         },
@@ -2639,27 +2590,21 @@ let RestApi = function () {
         },
 
         GetAcademicYears: function (req, res) {
-
             db.AkademskaGodina.findAll()
                 .then(function (godine) {
-
                     return res.status(200).json({akademskeGodine: godine});
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
 
         GetSemestersByAcademicYearId: function (req, res) {
-
             db.Semestar.findAll({where: {akademska_godina_id: req.params.id}})
                 .then(function (sems) {
-
                     return res.status(200).json({semestri: sems});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -2843,10 +2788,10 @@ let RestApi = function () {
         },
 
         DeleteComment: function (req, res) {
-
             RestApi.DeleteCommentByID(req.params.id, function (message, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(status).json({message: message});
             });
         },
@@ -3172,17 +3117,14 @@ let RestApi = function () {
         },
 
         GetGroupsByName: function (req, res) {
-
             db.Grupa.findAll({where: {naziv: req.query.naziv}})
                 .then(function (grupe) {
-
-                    if (!grupe || grupe.length === 0)
+                    if (!grupe || grupe.length === 0) {
                         return res.status(404).json({error: "Grupe nisu pronađene"});
-
+                    }
                     return res.status(200).json({grupe: grupe});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -3246,27 +3188,21 @@ let RestApi = function () {
         },
 
         GetHomeworksByNumber: function (req, res) {
-
             db.Spirala.findAll({where: {broj_spirale: req.params.broj}})
                 .then(function (spirale) {
-
                     return res.status(200).json({spirale: spirale});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetGroups: function (req, res) {
-
             db.Grupa.findAll()
                 .then(function (grupe) {
-
                     return res.status(200).json({grupe: grupe});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -3437,14 +3373,11 @@ let RestApi = function () {
         },
 
         GetExamsByExamTypeId: function (req, res) {
-
             return db.Ispit.findAll({where: {vrsta_ispita_id: req.params.id}})
                 .then(function (ispiti) {
-
                     return res.status(200).json({ispiti: ispiti});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -3680,13 +3613,11 @@ let RestApi = function () {
         },
 
         GetHomeworks: function (req, res) {
-
             db.Spirala.findAll()
                 .then(function (spirale) {
                     res.status(200).json({spirale: spirale});
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
