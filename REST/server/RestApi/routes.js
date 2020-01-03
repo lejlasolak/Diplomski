@@ -3,12 +3,14 @@ const RestApi = require('./api');
 
 const checkAuth = require('../middleware/check-auth');
 const loginMiddleware = require('../middleware/login-middleware');
+const esapiMiddleware = require('../middleware/esapi-middleware');
 const studentAuth = checkAuth.checkStudent;
 const teacherAuth = checkAuth.checkTeacher;
 const adminAuth = checkAuth.checkAdmin;
 const auth = checkAuth.checkAuth;
 const studentTeacherAuth = checkAuth.checkStudentTeacher;
 const checkFailedLogin = loginMiddleware.loginMiddleware;
+const encodeForHtml = esapiMiddleware.encodeForHtml;
 
 /*----------------------------------VRSTE KORISNIKA------------------------------------*/
 
@@ -24,14 +26,14 @@ router.get('/vrsteIspita/:id/ispiti', RestApi.GetExamsByExamTypeId);
 
 /*------------------------------------PRIVILEGIJE--------------------------------------*/
 
-router.put('/privilegije/:id', adminAuth, RestApi.EditPrivilegeById);
+router.put('/privilegije/:id', adminAuth, encodeForHtml, RestApi.EditPrivilegeById);
 router.delete('/privilegije/:id', adminAuth, RestApi.DeletePrivilegeById);
 router.get('/privilegije/:id', auth, RestApi.GetPrivilegeById);
 
 /*-------------------------------------EMAILOVI----------------------------------------*/
 
 router.delete('/emails/:id', auth, RestApi.DeleteEmailById);
-router.put('/emails/:id', auth, RestApi.EditEmailById);
+router.put('/emails/:id', auth, encodeForHtml, RestApi.EditEmailById);
 router.get('/emails/:id/korisnik', auth, RestApi.GetPersonByEmailId);
 
 /*-------------------------------------NALOG---------------------------------------*/
@@ -42,7 +44,7 @@ router.get('/nalozi/:id', adminAuth, RestApi.GetAccountById);
 /*-------------------------------------KORISNICI---------------------------------------*/
 
 router.post('/login', checkFailedLogin, RestApi.Login);
-router.post('/register', RestApi.RegisterPerson);
+router.post('/register', encodeForHtml, RestApi.RegisterPerson);
 
 router.get('/korisnici/prijavljeniKorisnik', auth, RestApi.GetLoggedInUser);
 router.get('/korisnici/prijavljeniKorisnik/nalog', auth, RestApi.GetLoggedInUserAccount);
@@ -56,14 +58,14 @@ router.get('/korisnici/:id', adminAuth, RestApi.GetUserById);
 router.get('/korisnici/:id/nalog', adminAuth, RestApi.GetAccountByPersonId);
 router.get('/korisnici/:id/emails', adminAuth, RestApi.GetEmailsByPersonId);
 router.get('/korisnici/:id/privilegije', adminAuth, RestApi.GetPrivilegesByPersonId);
-router.post('/korisnici/:id/privilegije', adminAuth, RestApi.AssignPrivilege);
+router.post('/korisnici/:id/privilegije', adminAuth, encodeForHtml, RestApi.AssignPrivilege);
 router.delete('/korisnici/:id', adminAuth, RestApi.DeleteUserByID);
-router.put('/korisnici/:id/verifikacija', adminAuth, RestApi.VerifyUserById);
+router.put('/korisnici/:id/verifikacija', adminAuth, encodeForHtml, RestApi.VerifyUserById);
 
-router.put('/korisnici/username', auth, RestApi.ChangeUsername);
-router.post('/korisnici/emails', auth, RestApi.CreateEmails);
-router.put('/korisnici/password', auth, RestApi.ChangePassword);
-router.put('/korisnici/podaci', auth, RestApi.ChangePersonalData);
+router.put('/korisnici/username', auth, encodeForHtml, RestApi.ChangeUsername);
+router.post('/korisnici/emails', auth, encodeForHtml, RestApi.CreateEmails);
+router.put('/korisnici/password', auth, encodeForHtml, RestApi.ChangePassword);
+router.put('/korisnici/podaci', auth, encodeForHtml, RestApi.ChangePersonalData);
 
 router.get('/studenti', teacherAuth, RestApi.GetStudents);
 router.get('/search/studenti', teacherAuth, RestApi.GetStudentByUsername);
@@ -82,8 +84,8 @@ router.get('/studenti/:id/privilegije', teacherAuth, RestApi.GetPrivilegesByStud
 
 /*-------------------------------------IZVJEŠTAJI--------------------------------------*/
 
-router.post('/izvjestaji', teacherAuth, RestApi.CreateReport);
-router.post('/izvjestaji/grupno', teacherAuth, RestApi.CreateReports);
+router.post('/izvjestaji', teacherAuth, encodeForHtml, RestApi.CreateReport);
+router.post('/izvjestaji/grupno', teacherAuth, encodeForHtml, RestApi.CreateReports);
 router.delete('/izvjestaji/:id', teacherAuth, RestApi.DeleteReportById);
 router.get('/izvjestaji', teacherAuth, RestApi.GetReports);
 router.get('/izvjestaji/:id', teacherAuth, RestApi.GetReportById);
@@ -96,19 +98,19 @@ router.get('/izvjestaji/:id/komentari', teacherAuth, RestApi.GetCommentsByReport
 router.get('/komentari', studentAuth, RestApi.GetCommentByParameters);
 router.get('/komentari/spirala/:id', studentAuth, RestApi.GetReceivedComments);
 router.delete('/komentari/:id', studentAuth, RestApi.DeleteComment);
-router.put('/komentari/:id', studentAuth, RestApi.EditCommentById);
-router.post('/komentari', studentAuth, RestApi.CreateComment);
+router.put('/komentari/:id', studentAuth, encodeForHtml, RestApi.EditCommentById);
+router.post('/komentari', studentAuth, encodeForHtml, RestApi.CreateComment);
 
 /*-------------------------------------REVIEWS------------------------------------------*/
 
-router.post('/reviews', studentAuth, RestApi.CreateReview);
+router.post('/reviews', studentAuth, encodeForHtml, RestApi.CreateReview);
 router.delete('/reviews/spirala/:id', studentAuth, RestApi.DeleteReviewByHomeworkId);
 
 /*-------------------------------------SPIRALE------------------------------------------*/
 
-router.post('/spirale', teacherAuth, RestApi.CreateHomework);
+router.post('/spirale', teacherAuth, encodeForHtml, RestApi.CreateHomework);
 router.get('/spirale', studentTeacherAuth, RestApi.GetHomeworks);
-router.put('/spirale/:id', teacherAuth, RestApi.EditHomeworkById);
+router.put('/spirale/:id', teacherAuth, encodeForHtml, RestApi.EditHomeworkById);
 router.get('/search/spirale/broj/:broj', studentTeacherAuth, RestApi.GetHomeworksByNumber);
 router.get('/search/spirale/godina/:godina([^/]+/[^/]+)', studentTeacherAuth, RestApi.GetHomeworksByYear);
 router.get('/spirale/:id', studentTeacherAuth, RestApi.GetHomeworkById);
@@ -118,8 +120,8 @@ router.delete('/spirale/:id', teacherAuth, RestApi.DeleteHomework);
 
 /*-------------------------------------REPOZITORIJI--------------------------------------*/
 
-router.post('/repozitoriji', studentAuth, RestApi.CreateRepository);
-router.put('/repozitoriji/:id', studentAuth, RestApi.EditRepositoryById);
+router.post('/repozitoriji', studentAuth, encodeForHtml, RestApi.CreateRepository);
+router.put('/repozitoriji/:id', studentAuth, encodeForHtml, RestApi.EditRepositoryById);
 router.delete('/repozitoriji/:id', studentAuth, RestApi.DeleteRepositoryById);
 router.get('/repozitoriji/:id', teacherAuth, RestApi.GetRepositoryById);
 router.get('/repozitoriji', teacherAuth, RestApi.GetRepositories);
@@ -127,8 +129,8 @@ router.get('/repozitoriji/:id/student', teacherAuth, RestApi.GetPersonByReposito
 
 /*-------------------------------------SPISKOVI---------------------------------------*/
 
-router.post('/spiskovi', teacherAuth, RestApi.CreateList);
-router.put('/spiskovi', teacherAuth, RestApi.EditList);
+router.post('/spiskovi', teacherAuth, encodeForHtml, RestApi.CreateList);
+router.put('/spiskovi', teacherAuth, encodeForHtml, RestApi.EditList);
 router.delete('/spiskovi', teacherAuth, RestApi.DeleteList);
 router.get('/search/spiskovi', teacherAuth, RestApi.SearchListByHomeworkId);
 router.get('/spiskovi', teacherAuth, RestApi.GetLists);
@@ -136,8 +138,8 @@ router.get('/spiskovi/:id', teacherAuth, RestApi.GetListById);
 
 /*-------------------------------------AKADEMSKE GODINE------------------------------------*/
 
-router.post('/akademskeGodine', teacherAuth, RestApi.CreateAcademicYear);
-router.put('/akademskeGodine/:id', teacherAuth, RestApi.EditAcademicYearById);
+router.post('/akademskeGodine', teacherAuth, encodeForHtml, RestApi.CreateAcademicYear);
+router.put('/akademskeGodine/:id', teacherAuth, encodeForHtml, RestApi.EditAcademicYearById);
 router.get('/akademskeGodine', studentTeacherAuth, RestApi.GetAcademicYears);
 router.get('/search/akademskeGodine', studentTeacherAuth, RestApi.GetAcademicYearsByName);
 router.get('/akademskeGodine/trenutna', studentTeacherAuth, RestApi.GetCurrentAcademicYear);
@@ -147,8 +149,8 @@ router.delete('/akademskeGodine/:id', teacherAuth, RestApi.DeleteAcademicYearByI
 
 /*-------------------------------------SEMESTRI---------------------------------------*/
 
-router.post('/semestri', teacherAuth, RestApi.CreateSemester);
-router.put('/semestri/:id', teacherAuth, RestApi.EditSemesterById);
+router.post('/semestri', teacherAuth, encodeForHtml, RestApi.CreateSemester);
+router.put('/semestri/:id', teacherAuth, encodeForHtml, RestApi.EditSemesterById);
 router.get('/semestri', studentTeacherAuth, RestApi.GetSemesters);
 router.get('/semestri/:id', studentTeacherAuth, RestApi.GetSemesterById);
 router.get('/semestri/:id/grupe', studentTeacherAuth, RestApi.GetGroupsBySemesterId);
@@ -159,10 +161,10 @@ router.delete('/semestri/:id', teacherAuth, RestApi.DeleteSemester);
 
 /*-------------------------------------GRUPE------------------------------------------*/
 
-router.post('/grupe', teacherAuth, RestApi.CreateGroup);
-router.put('/grupe/:id', teacherAuth, RestApi.EditGroupById);
+router.post('/grupe', teacherAuth, encodeForHtml, RestApi.CreateGroup);
+router.put('/grupe/:id', teacherAuth, encodeForHtml, RestApi.EditGroupById);
 router.delete('/grupe/:id/studenti', teacherAuth, RestApi.DeleteGroupsStudentsByGroupId);
-router.put('/grupe/:id/studenti', teacherAuth, RestApi.EditGroupsStudentsByGroupId);
+router.put('/grupe/:id/studenti', teacherAuth, encodeForHtml, RestApi.EditGroupsStudentsByGroupId);
 router.get('/grupe/:id', studentTeacherAuth, RestApi.GetGroupById);
 router.get('/grupe/:id/semestar', studentTeacherAuth, RestApi.GetSemesterByGroupId);
 router.get('/grupe/:id/studenti', studentTeacherAuth, RestApi.GetGroupsStudents);
@@ -177,8 +179,8 @@ router.get('/search/ispiti/vrsta/:vrsta', studentTeacherAuth, RestApi.GetExamsBy
 router.get('/ispiti/:id', studentTeacherAuth, RestApi.GetExamById);
 router.get('/ispiti', studentTeacherAuth, RestApi.GetExams);
 router.get('/search/ispiti/godina/:godina([^/]+/[^/]+)', studentTeacherAuth, RestApi.GetExamsByYear);
-router.post('/ispiti', teacherAuth, RestApi.CreateExam);
-router.put('/ispiti/:id', teacherAuth, RestApi.EditExamById);
+router.post('/ispiti', teacherAuth, encodeForHtml, RestApi.CreateExam);
+router.put('/ispiti/:id', teacherAuth, encodeForHtml, RestApi.EditExamById);
 router.get('/ispiti/:id/semestar', studentTeacherAuth, RestApi.GetSemesterByExamId);
 router.get('/ispiti/:id/vrstaIspita', studentTeacherAuth, RestApi.GetExamTypeByExamId);
 router.delete('/ispiti/:id', teacherAuth, RestApi.DeleteExamById);
@@ -191,9 +193,9 @@ router.get('/ispitBodovi/:id', studentTeacherAuth, RestApi.GetExamPointsById);
 router.get('/ispitBodovi/:id/student', studentTeacherAuth, RestApi.GetStudentByExamPointsId);
 router.get('/ispitBodovi/:id/ispit', studentTeacherAuth, RestApi.GetExamByExamPointsId);
 router.get('/ispitBodovi/student/:id', teacherAuth, RestApi.GetExamPointsByStudentId);
-router.post('/ispitBodovi/grupno', teacherAuth, RestApi.CreateExamPoints);
-router.post('/ispitBodovi', teacherAuth, RestApi.CreateOneExamPoints);
-router.put('/ispitBodovi/:id', teacherAuth, RestApi.EditExamPointsById);
+router.post('/ispitBodovi/grupno', teacherAuth, encodeForHtml, RestApi.CreateExamPoints);
+router.post('/ispitBodovi', teacherAuth, encodeForHtml, RestApi.CreateOneExamPoints);
+router.put('/ispitBodovi/:id', teacherAuth, encodeForHtml, RestApi.EditExamPointsById);
 router.delete('/ispitBodovi/grupno', teacherAuth, RestApi.DeleteExamPoints);
 router.delete('/ispitBodovi/:id', teacherAuth, RestApi.DeleteExamPointsById);
 
@@ -205,9 +207,9 @@ router.get('/spiralaBodovi', studentTeacherAuth, RestApi.GetHomeworkPoints);
 router.get('/spiralaBodovi/:id/student', studentTeacherAuth, RestApi.GetStudentByHomeworkPointsId);
 router.get('/spiralaBodovi/:id/spirala', studentTeacherAuth, RestApi.GetHomeworkByHomeworkPointsId);
 router.get('/spiralaBodovi/student/:id', teacherAuth, RestApi.GetHomeworkPointsByStudentId);
-router.post('/spiralaBodovi/grupno', teacherAuth, RestApi.CreateHomeworkPoints);
-router.post('/spiralaBodovi', teacherAuth, RestApi.CreateOneHomeworkPoints);
-router.put('/spiralaBodovi/:id', teacherAuth, RestApi.EditHomeworkPointsById);
+router.post('/spiralaBodovi/grupno', teacherAuth, encodeForHtml, RestApi.CreateHomeworkPoints);
+router.post('/spiralaBodovi', teacherAuth, encodeForHtml, RestApi.CreateOneHomeworkPoints);
+router.put('/spiralaBodovi/:id', teacherAuth, encodeForHtml, RestApi.EditHomeworkPointsById);
 router.delete('/spiralaBodovi/grupno', teacherAuth, RestApi.DeleteHomeworkPoints);
 router.delete('/spiralaBodovi/:id', teacherAuth, RestApi.DeleteHomeworkPointsById);
 

@@ -1,50 +1,40 @@
 let RestApi = function () {
-
     const db = require('../model/db').DbContext;
     const bcrypt = require('../model/db').bcrypt;
     const jwt = require('jsonwebtoken');
 
     function ErrorWithStatusCode(message, status) {
-
         this.message = message;
         this.status = status;
     }
 
     return {
-
         GetUserTypes: function (req, res) {
-
             return db.VrstaKorisnika.findAll()
                 .then(function (vrsta) {
-
                     return res.status(200).json({vrsteKorisnika: vrsta});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetUserTypeById: function (req, res) {
-
             return db.VrstaKorisnika.findOne({where: {id: req.params.id}})
                 .then(function (vrsta) {
-
-                    if (!vrsta) return res.status(404).json({error: "Nije pronađena vrsta korisnika"});
-
+                    if (!vrsta) {
+                        return res.status(404).json({error: "Nije pronađena vrsta korisnika"});
+                    }
                     return res.status(200).json({vrstaKorisnika: vrsta});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetUsers: function (req, res) {
-
             return db.Osoba.findAll()
                 .then(function (users) {
-
                     return res.status(200).json({korisnici: users});
                 })
                 .catch(function (error) {
@@ -53,615 +43,560 @@ let RestApi = function () {
         },
 
         GetExamTypes: function (req, res) {
-
             return db.VrstaIspita.findAll()
                 .then(function (vrsta) {
-
                     return res.status(200).json({vrsteIspita: vrsta});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetExamTypeById: function (req, res) {
-
             return db.VrstaIspita.findOne({where: {id: req.params.id}})
                 .then(function (vrsta) {
-
-                    if (!vrsta) return res.status(404).json({error: "Nije pronađena vrsta ispita"});
-
+                    if (!vrsta) {
+                        return res.status(404).json({error: "Nije pronađena vrsta ispita"});
+                    }
                     return res.status(200).json({vrstaIspita: vrsta});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         AssignPrivilege: function (req, res) {
-
             req.body.osoba_id = req.params.id;
-
-            if (!req.body.vrsta_korisnika_id) return res.status(422).json({error: "Neispravni parametri"});
-
+            if (!req.body.vrsta_korisnika_id) {
+                return res.status(422).json({error: "Neispravni parametri"});
+            }
             return db.Privilegije.findOne({
                 where: {
                     osoba_id: req.body.osoba_id,
                     vrsta_korisnika_id: req.body.vrsta_korisnika_id
                 }
-            })
-                .then(function (privilegija) {
-
-                    if (privilegija) throw new Error("Korisnik već ima privilegiju");
-
-                    return db.Privilegije.create(req.body);
-                })
-                .then(function () {
-
-                    return res.status(201).json({message: "Uspješno dodana privilegija"});
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error.message});
-                });
+            }).then(function (privilegija) {
+                if (privilegija) {
+                    throw new Error("Korisnik već ima privilegiju");
+                }
+                return db.Privilegije.create(req.body);
+            }).then(function () {
+                return res.status(201).json({message: "Uspješno dodana privilegija"});
+            }).catch(function (error) {
+                return res.status(500).json({error: error.message});
+            });
         },
 
         EditPrivilegeById: function (req, res) {
-
             db.Privilegije.findOne({where: {id: req.params.id}})
                 .then(function (privilegija) {
-
-                    if (!privilegija) return res.status(404).json({error: "Nije pronađena privilegija"});
-
+                    if (!privilegija) {
+                        return res.status(404).json({error: "Nije pronađena privilegija"});
+                    }
                     return db.Privilegije.findOne({
                         where: {
                             osoba_id: privilegija.osoba_id,
                             vrsta_korisnika_id: req.body.vrsta_korisnika_id
                         }
+                    }).then(function (privilege) {
+                        if (privilege && privilege.id != req.params.id) {
+                            throw new Error("Korisnik već ima privilegiju");
+                        }
+                        privilegija.update(req.body)
+                            .then(function () {
+                                return res.status(200).json({message: "Uspješno izmijenjena privilegija"});
+                            });
                     })
-                        .then(function (privilege) {
-
-                            if (privilege && privilege.id != req.params.id)
-                                throw new Error("Korisnik već ima privilegiju");
-
-                            privilegija.update(req.body)
-                                .then(function () {
-
-                                    return res.status(200).json({message: "Uspješno izmijenjena privilegija"});
-                                });
-                        })
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         DeletePrivilegeById: function (req, res) {
-
             db.Privilegije.findOne({where: {id: req.params.id}})
                 .then(function (privilegija) {
-
-                    if (!privilegija) return res.status(404).json({error: "Nije pronađena privilegija"});
-
+                    if (!privilegija) {
+                        return res.status(404).json({error: "Nije pronađena privilegija"});
+                    }
                     privilegija.destroy()
                         .then(function () {
-
                             return res.status(200).json({message: "Uspješno obrisana privilegija"});
                         });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetPersonById: function (id, callback) {
-
             return db.Osoba.findOne({where: {id: id}})
                 .then(function (osoba) {
-
-                    if (!osoba) throw new ErrorWithStatusCode("Nepostojeći korisnik", 404);
-
+                    if (!osoba) {
+                        throw new ErrorWithStatusCode("Nepostojeći korisnik", 404);
+                    }
                     return callback(osoba, 200, null);
                 })
                 .catch(function (error) {
-
-                    if (error.status) return callback(null, error.status, error.message);
+                    if (error.status) {
+                        return callback(null, error.status, error.message);
+                    }
                     return callback(null, 500, error.message);
                 });
         },
 
         GetUserById: function (req, res) {
-
             RestApi.GetPersonById(req.params.id, function (data, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(status).json({korisnik: data});
             });
         },
 
         GetLoggedInUser: function (req, res) {
-
             RestApi.GetPersonById(res.userData.osoba_id, function (data, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(status).json({korisnik: data});
             });
         },
 
         GetStudents: function (req, res) {
-
             RestApi.GetPersonByType("student", function (data, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(200).json({studenti: data});
             });
         },
 
         GetUsersByUserTypeId: function (req, res) {
-
             db.VrstaKorisnika.findOne({where: {id: req.params.id}})
                 .then(function (vrsta) {
-
-                    if (!vrsta) return res.status(404).json({error: "Nije pronađena vrsta korisnika"});
-
+                    if (!vrsta) {
+                        return res.status(404).json({error: "Nije pronađena vrsta korisnika"});
+                    }
                     RestApi.GetPersonByType(vrsta.naziv, function (data, status, error) {
-
-                        if (error) return res.status(status).json({error: error});
+                        if (error) {
+                            return res.status(status).json({error: error});
+                        }
                         return res.status(200).json({korisnici: data});
                     });
                 });
         },
 
         GetUsersByType: function (req, res) {
-
             RestApi.GetPersonByType(req.params.vrsta, function (data, status, error) {
-
-                if (error) res.status(status).json({error: error});
-                else res.status(200).json({korisnici: data});
+                if (error) {
+                    res.status(status).json({error: error});
+                } else {
+                    res.status(200).json({korisnici: data});
+                }
             });
         },
 
         GetPersonByUsername: function (req, res) {
-
             return db.Nalog.findOne({where: {username: req.query.username}})
                 .then(function (nalog) {
-
-                    if (!nalog) return res.status(404).json({error: "Nepostojeći korisnik"});
-
+                    if (!nalog) {
+                        return res.status(404).json({error: "Nepostojeći korisnik"});
+                    }
                     return db.Osoba.findOne({where: {id: nalog.osoba_id}})
                         .then(function (person) {
-
-                            if (!person) return res.status(404).json({error: "Nepostojeći korisnik"});
-
+                            if (!person) {
+                                return res.status(404).json({error: "Nepostojeći korisnik"});
+                            }
                             return res.status(200).json({korisnik: person});
                         });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetPersonByType: function (tip, callback) {
-
             let korisnici = [];
-
             return db.VrstaKorisnika.findOne({where: {naziv: tip}})
                 .then(function (vrsta) {
-
-                    if (!vrsta) throw new ErrorWithStatusCode("Nepostojeća vrsta korisnika", 404);
-
+                    if (!vrsta) {
+                        throw new ErrorWithStatusCode("Nepostojeća vrsta korisnika", 404);
+                    }
                     return db.Privilegije.findAll({where: {vrsta_korisnika_id: vrsta.id}});
                 })
                 .then(function (privilegije) {
-
-                    if (privilegije.length === 0) return callback(privilegije, null);
-
-                    let promises = [];
-
-                    for (let i in privilegije) {
-                        promises.push(db.Osoba.findOne({where: {id: privilegije[i].osoba_id}})
-                            .then(function (osoba) {
-                                korisnici.push(osoba);
-                            }));
+                    if (privilegije.length === 0) {
+                        return callback(privilegije, null);
                     }
-
+                    let promises = [];
+                    for (let i in privilegije) {
+                        promises.push(db.Osoba.findOne({
+                            where: {
+                                id: privilegije[i].osoba_id
+                            }
+                        }).then(function (osoba) {
+                            korisnici.push(osoba);
+                        }));
+                    }
                     return Promise.all(promises).then(function () {
                         return callback(korisnici, 200, null);
                     });
                 })
                 .catch(function (err) {
-
-                    if (err.status) return callback(null, err.status, err.message);
+                    if (err.status) {
+                        return callback(null, err.status, err.message);
+                    }
                     return callback(null, 500, err.message);
                 });
         },
 
         GetStudentByUsername: function (req, res) {
-
             let promises = [];
             let found = 0;
-
             return db.Nalog.findOne({where: {username: req.query.username}})
                 .then(function (nalog) {
-
-                    if (!nalog) return res.status(404).json({error: "Nepostojeći korisnik"});
-
-                    return db.Privilegije.findAll({where: {osoba_id: nalog.osoba_id}})
-                        .then(function (privilegije) {
-
-                            for (let p in privilegije) {
-                                if (!privilegije.hasOwnProperty(p)) continue;
-
-                                promises.push(db.VrstaKorisnika.findOne({where: {id: privilegije[p].vrsta_korisnika_id}})
-                                    .then(function (vrsta) {
-
-                                        if (vrsta.naziv === "student") {
-                                            found = 1;
-                                        }
-                                    }));
+                    if (!nalog) {
+                        return res.status(404).json({error: "Nepostojeći korisnik"});
+                    }
+                    return db.Privilegije.findAll({
+                        where: {
+                            osoba_id: nalog.osoba_id
+                        }
+                    }).then(function (privilegije) {
+                        for (let p in privilegije) {
+                            if (!privilegije.hasOwnProperty(p)) {
+                                continue;
                             }
-                            return Promise.all(promises).then(function () {
-
-                                if (found === 0) return res.status(404).json({error: "Student nije pronađen"});
-
-                                return db.Osoba.findOne({where: {id: nalog.osoba_id}})
-                                    .then(function (osoba) {
-
-                                        return res.status(200).json({student: osoba});
-                                    });
+                            promises.push(db.VrstaKorisnika.findOne({
+                                where: {
+                                    id: privilegije[p].vrsta_korisnika_id
+                                }
+                            }).then(function (vrsta) {
+                                if (vrsta.naziv === "student") {
+                                    found = 1;
+                                }
+                            }));
+                        }
+                        return Promise.all(promises).then(function () {
+                            if (found === 0) {
+                                return res.status(404).json({error: "Student nije pronađen"});
+                            }
+                            return db.Osoba.findOne({
+                                where: {
+                                    id: nalog.osoba_id
+                                }
+                            }).then(function (osoba) {
+                                return res.status(200).json({student: osoba});
                             });
                         });
+                    });
                 })
                 .catch(function (error) {
-
                     return callback(null, error.message);
                 });
         },
 
         GetPrivilegesByPersonId: function (req, res) {
-
             let privileges = [];
-
             return db.Privilegije.findAll({where: {osoba_id: req.params.id}})
                 .then(function (privilegije) {
-
                     let brojac = privilegije.length;
-                    if (brojac === 0) return res.status(200).json({privilegije: privileges});
-
+                    if (brojac === 0) {
+                        return res.status(200).json({privilegije: privileges});
+                    }
                     for (let i in privilegije) {
-
                         RestApi.GetWholePrivilege(privilegije[i].id, function (privilege, status, error) {
-
-                            if (!error) privileges.push(privilege);
+                            if (!error) {
+                                privileges.push(privilege);
+                            }
                             brojac--;
-                            if (brojac === 0) return res.status(200).json({privilegije: privileges});
+                            if (brojac === 0) {
+                                return res.status(200).json({privilegije: privileges});
+                            }
                         });
                     }
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         GetPrivilegesByStudentId: function (req, res) {
-
             let found = 0;
             let privileges = [];
             let promises = [];
-
             return db.Privilegije.findAll({where: {osoba_id: req.params.id}})
                 .then(function (privilegije) {
-
-                    if (privilegije.length === 0) return res.status(404).json({error: "Nepostojeći korisnik"});
-
+                    if (privilegije.length === 0) {
+                        return res.status(404).json({error: "Nepostojeći korisnik"});
+                    }
                     for (let p in privilegije) {
-                        if (!privilegije.hasOwnProperty(p)) continue;
-
-                        promises.push(db.VrstaKorisnika.findOne({where: {id: privilegije[p].vrsta_korisnika_id}})
-                            .then(function (vrsta) {
-
-                                if (vrsta.naziv === "student") {
-                                    found = 1;
-                                }
-                            }));
+                        if (!privilegije.hasOwnProperty(p)) {
+                            continue;
+                        }
+                        promises.push(db.VrstaKorisnika.findOne({
+                            where: {
+                                id: privilegije[p].vrsta_korisnika_id
+                            }
+                        }).then(function (vrsta) {
+                            if (vrsta.naziv === "student") {
+                                found = 1;
+                            }
+                        }));
                     }
                     return Promise.all(promises).then(function () {
-
-                        if (found === 0) return res.status(404).json({error: "Student nije pronađen"});
-
+                        if (found === 0) {
+                            return res.status(404).json({error: "Student nije pronađen"});
+                        }
                         let brojac = privilegije.length;
-                        if (brojac === 0) return res.status(200).json({privilegije: privileges});
-
+                        if (brojac === 0) {
+                            return res.status(200).json({privilegije: privileges});
+                        }
                         for (let i in privilegije) {
-
                             RestApi.GetWholePrivilege(privilegije[i].id, function (privilege, status, error) {
-
-                                if (!error) privileges.push(privilege);
+                                if (!error) {
+                                    privileges.push(privilege);
+                                }
                                 brojac--;
-                                if (brojac === 0) return res.status(200).json({privilegije: privileges});
+                                if (brojac === 0) {
+                                    return res.status(200).json({privilegije: privileges});
+                                }
                             });
                         }
                     });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         GetLoggedInUserPrivilege: function (req, res) {
-
             let privileges = [];
-
             return db.Privilegije.findAll({where: {osoba_id: res.userData.osoba_id}})
                 .then(function (privilegije) {
-
                     let brojac = privilegije.length;
-                    if (brojac === 0) return res.status(200).json({privilegije: privileges});
-
+                    if (brojac === 0) {
+                        return res.status(200).json({privilegije: privileges});
+                    }
                     for (let i in privilegije) {
-
                         RestApi.GetWholePrivilege(privilegije[i].id, function (privilege, status, error) {
-
-                            if (!error) privileges.push(privilege);
+                            if (!error) {
+                                privileges.push(privilege);
+                            }
                             brojac--;
-                            if (brojac === 0) return res.status(200).json({privilegije: privileges});
+                            if (brojac === 0) {
+                                return res.status(200).json({privilegije: privileges});
+                            }
                         });
                     }
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         CreateRepository: function (req, res) {
-
             req.body.student_id = res.userData.osoba_id;
-
             return db.Repozitorij.findOne({
                 where: {
                     student_id: req.body.student_id,
                     naziv: req.body.naziv
                 }
-            })
-                .then(function (r) {
-
-                    if (r) return res.status(409).json({error: "Postoji već repozitorij sa datim nazivom"});
-
-                    return db.Repozitorij.create(req.body)
-                        .then(function () {
-
-                            return res.status(201).json({message: "Uspješno kreiran repozitorij"});
-                        });
-                })
-                .catch(function (err) {
-
-                    res.status(500).json({error: err.message});
-                });
+            }).then(function (r) {
+                if (r) {
+                    return res.status(409).json({error: "Postoji već repozitorij sa datim nazivom"});
+                }
+                return db.Repozitorij.create(req.body)
+                    .then(function () {
+                        return res.status(201).json({message: "Uspješno kreiran repozitorij"});
+                    });
+            }).catch(function (err) {
+                res.status(500).json({error: err.message});
+            });
         },
 
         EditRepositoryById: function (req, res) {
-
             return db.Repozitorij.findOne({where: {id: req.params.id.id, student_id: req.body.student_id}})
                 .then(function (repo) {
-
-                    if (!repo) return res.status(404).json({error: "Repozitorij nije pronađen"});
-
+                    if (!repo) {
+                        return res.status(404).json({error: "Repozitorij nije pronađen"});
+                    }
                     return db.Repozitorij.findOne({
                         where: {
                             student_id: repo.student_id,
                             naziv: req.body.naziv
                         }
-                    })
-                        .then(function (r) {
-
-                            if (r && req.body.naziv && r.id != req.params.id)
-                                return res.status(409).json({error: "Postoji već repozitorij sa datim nazivom"});
-
-                            return db.Repozitorij.findOne({where: {id: req.params.id}})
-                                .then(function (repo) {
-
-                                    return repo.update(req.body)
-                                        .then(function (value) {
-
-                                            return res.status(200).json({message: "Uspješno izmijenjen repozitorij"});
-                                        })
-                                        .catch(function (error) {
-
-                                            res.status(500).json({error: error.message});
-                                        });
-                                });
-                        });
+                    }).then(function (r) {
+                        if (r && req.body.naziv && r.id != req.params.id) {
+                            return res.status(409).json({error: "Postoji već repozitorij sa datim nazivom"});
+                        }
+                        return db.Repozitorij.findOne({where: {id: req.params.id}})
+                            .then(function (repo) {
+                                return repo.update(req.body)
+                                    .then(function (value) {
+                                        return res.status(200).json({message: "Uspješno izmijenjen repozitorij"});
+                                    })
+                                    .catch(function (error) {
+                                        res.status(500).json({error: error.message});
+                                    });
+                            });
+                    });
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
 
         DeleteRepositoryById: function (req, res) {
-
             db.Repozitorij.findOne({where: {id: req.params.id}})
                 .then(function (repo) {
-
-                    if (!repo) return res.status(404).json({error: "Repozitorij nije pronađen"});
-
+                    if (!repo) {
+                        return res.status(404).json({error: "Repozitorij nije pronađen"});
+                    }
                     repo.destroy()
                         .then(function () {
-
                             return res.status(200).json({message: "Uspješno obrisan repozitorij"});
                         })
                         .catch(function (error) {
-
                             return res.status(500).json({error: error.message});
                         });
                 });
         },
 
         GetRepositoriesByPersonId: function (req, res) {
-
             db.Repozitorij.findAll({where: {student_id: req.params.id}})
                 .then(function (bbs) {
-
                     return res.status(200).json({repozitoriji: bbs});
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
 
         GetMyRepositories: function (req, res) {
-
             db.Repozitorij.findAll({where: {student_id: res.userData.osoba_id}})
                 .then(function (bbs) {
-
                     return res.status(200).json({repozitoriji: bbs});
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
 
         GetRepositories: function (req, res) {
-
             db.Repozitorij.findAll()
                 .then(function (bbs) {
-
                     return res.status(200).json({repozitoriji: bbs});
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error.message});
                 });
         },
 
         GetMyRepositoryById: function (req, res) {
-
-            db.Repozitorij.findOne({where: {id: req.params.id, student_id: res.userData.osoba_id}})
-                .then(function (repo) {
-
-                    if (!repo) return res.status(404).json({error: "Repozitorij nije pronađen"});
-
-                    return res.status(200).json({repozitorij: repo});
-                })
-                .catch(function (error) {
-
-                    res.status(500).json({error: error.message});
-                });
+            db.Repozitorij.findOne({
+                where: {
+                    id: req.params.id,
+                    student_id: res.userData.osoba_id
+                }
+            }).then(function (repo) {
+                if (!repo) {
+                    return res.status(404).json({error: "Repozitorij nije pronađen"});
+                }
+                return res.status(200).json({repozitorij: repo});
+            }).catch(function (error) {
+                res.status(500).json({error: error.message});
+            });
         },
 
         GetRepositoryById: function (req, res) {
-
             db.Repozitorij.findOne({where: {id: req.params.id}})
                 .then(function (repo) {
-
-                    if (!repo) return res.status(404).json({error: "Repozitorij nije pronađen"});
-
+                    if (!repo) {
+                        return res.status(404).json({error: "Repozitorij nije pronađen"});
+                    }
                     return res.status(200).json({repozitorij: repo});
                 })
                 .catch(function (error) {
-
                     res.status(500).json({error: error.message});
                 });
         },
 
         GetPersonByRepositoryId: function (req, res) {
-
             return db.Repozitorij.findOne({where: {id: req.params.id}})
                 .then(function (repozitorij) {
-
-                    if (!repozitorij) return res.status(404).json({error: "Repozitorij nije pronađen"});
-
-                    return db.Osoba.findOne({where: {id: repozitorij.student_id}})
-                        .then(function (student) {
-
-                            if (!student) return res.status(404).json({error: "Student nije pronađen"});
-
-                            return res.status(200).json({student: student});
-                        });
+                    if (!repozitorij) {
+                        return res.status(404).json({error: "Repozitorij nije pronađen"});
+                    }
+                    return db.Osoba.findOne({
+                        where: {
+                            id: repozitorij.student_id
+                        }
+                    }).then(function (student) {
+                        if (!student) {
+                            return res.status(404).json({error: "Student nije pronađen"});
+                        }
+                        return res.status(200).json({student: student});
+                    });
                 })
                 .catch(function (error) {
-
                     return res.status(500).json({error: error});
                 });
         },
 
         CreateEmails: function (req, res) {
-
             for (let i = 0; i < req.body.emails.length; i++) {
                 req.body.emails[i].osoba_id = res.userData.osoba_id;
             }
-
             return db.Email.bulkCreate(req.body.emails)
                 .then(function () {
-
                     return res.status(201).json({message: "Uspješno kreirani e-mailovi"});
                 })
                 .catch(function (error) {
-
                     return res.status(409).json({error: "Email adresa već postoji"});
                 });
         },
 
         DeleteEmailById: function (req, res) {
-
             return db.Email.findOne({
                 where: {
                     id: req.params.id,
                     osoba_id: res.userData.osoba_id
                 }
-            })
-                .then(function (email) {
-
-                    if (!email) return res.status(404).json({error: "Nije pronađen e-mail"});
-
-                    return email.destroy()
-                        .then(function () {
-
-                            return res.status(200).json({message: "Uspješno obrisan e-mail"});
-                        });
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error.message});
-                });
+            }).then(function (email) {
+                if (!email) {
+                    return res.status(404).json({error: "Nije pronađen e-mail"});
+                }
+                return email.destroy()
+                    .then(function () {
+                        return res.status(200).json({message: "Uspješno obrisan e-mail"});
+                    });
+            }).catch(function (error) {
+                return res.status(500).json({error: error.message});
+            });
         },
 
         EditEmailById: function (req, res) {
-
             return db.Email.findOne({
                 where: {
                     id: req.params.id,
                     osoba_id: res.userData.osoba_id
                 }
-            })
-                .then(function (email) {
-
-                    if (!email) return res.status(404).json({error: "Nije pronađen e-mail"});
-
-                    return email.update(req.body)
-                        .then(function () {
-
-                            return res.status(200).json({message: "Uspješno izmijenjen e-mail"});
-                        })
-                        .catch(function (error) {
-
-                            return res.status(409).json({error: "Email adresa već postoji"});
-                        });
-                })
-                .catch(function (error) {
-
-                    return res.status(500).json({error: error.message});
-                });
+            }).then(function (email) {
+                if (!email) {
+                    return res.status(404).json({error: "Nije pronađen e-mail"});
+                }
+                return email.update(req.body)
+                    .then(function () {
+                        return res.status(200).json({message: "Uspješno izmijenjen e-mail"});
+                    })
+                    .catch(function (error) {
+                        return res.status(409).json({error: "Email adresa već postoji"});
+                    });
+            }).catch(function (error) {
+                return res.status(500).json({error: error.message});
+            });
         },
 
         GetEmailsByPersonId: function (req, res) {
@@ -3880,78 +3815,68 @@ let RestApi = function () {
         },
 
         DeleteSemester: function (req, res) {
-
             RestApi.DeleteSemesterById(req.params.id, function (message, status, error) {
-
-                if (error) return res.status(status).json({error: error});
+                if (error) {
+                    return res.status(status).json({error: error});
+                }
                 return res.status(status).json({message: message});
             });
         },
 
         DeleteSemesterById: function (id, callback) {
-
             return db.Semestar.findOne({where: {id: id}})
                 .then(function (sem) {
-
-                    if (!sem) throw new ErrorWithStatusCode("Nije pronađen semestar", 404);
-
+                    if (!sem) {
+                        throw new ErrorWithStatusCode("Nije pronađen semestar", 404);
+                    }
                     return sem.destroy();
                 })
                 .then(function () {
-
                     return db.Grupa.findAll({where: {semestar_id: id}});
                 })
                 .then(function (grupe) {
-
                     let promises = [];
-
-                    for (let i in grupe) promises.push(db.StudentGrupa.destroy({where: {grupa_id: grupe[i].id}}));
-
+                    for (let i in grupe) {
+                        promises.push(db.StudentGrupa.destroy({where: {grupa_id: grupe[i].id}}));
+                    }
                     return Promise.all(promises);
                 })
                 .then(function () {
-
                     return db.Grupa.destroy({where: {semestar_id: id}});
                 })
                 .then(function () {
-
                     return db.Ispit.findAll({where: {semestar_id: id}});
                 })
                 .then(function (ispiti) {
-
                     let promises = [];
-
-                    for (let i = 0; i < ispiti.length; i++) promises.push(db.IspitBodovi.destroy({where: {ispit_id: ispiti[i].id}}));
-
+                    for (let i = 0; i < ispiti.length; i++) {
+                        promises.push(db.IspitBodovi.destroy({where: {ispit_id: ispiti[i].id}}));
+                    }
                     return Promise.all(promises);
                 })
                 .then(function () {
-
                     return db.Ispit.destroy({where: {semestar_id: id}});
                 })
                 .then(function () {
-
                     return db.Spirala.findAll({where: {semestar_id: id}});
                 })
                 .then(function (spirale) {
-
                     let promises = [];
-
-                    for (let i = 0; i < spirale.length; i++) promises.push(db.SpiralaBodovi.destroy({where: {spirala_id: spirale[i].id}}));
-
+                    for (let i = 0; i < spirale.length; i++) {
+                        promises.push(db.SpiralaBodovi.destroy({where: {spirala_id: spirale[i].id}}));
+                    }
                     return Promise.all(promises);
                 })
                 .then(function () {
-
                     return db.Spirala.destroy({where: {semestar_id: id}});
                 })
                 .then(function () {
-
                     return callback("Uspješno obrisan semestar", 200, null);
                 })
                 .catch(function (err) {
-
-                    if (err.status) return callback(null, status, err.message);
+                    if (err.status) {
+                        return callback(null, status, err.message);
+                    }
                     return callback(null, 500, err.message);
                 });
         },

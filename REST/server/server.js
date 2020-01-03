@@ -17,6 +17,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors());
 app.use('/api', require('./RestApi/routes'));
 app.use(rateLimiterMiddleware);
+app.disable("x-powered-by");
 
 const server = https.createServer(credentials, app);
 
