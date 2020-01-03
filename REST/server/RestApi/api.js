@@ -331,15 +331,15 @@ let RestApi = function () {
                 .then(function (privilegije) {
 
                     let brojac = privilegije.length;
-                    if(brojac === 0) return res.status(200).json({privilegije: privileges});
+                    if (brojac === 0) return res.status(200).json({privilegije: privileges});
 
-                    for(let i in privilegije) {
+                    for (let i in privilegije) {
 
                         RestApi.GetWholePrivilege(privilegije[i].id, function (privilege, status, error) {
 
-                            if(!error) privileges.push(privilege);
+                            if (!error) privileges.push(privilege);
                             brojac--;
-                            if(brojac === 0) return res.status(200).json({privilegije: privileges});
+                            if (brojac === 0) return res.status(200).json({privilegije: privileges});
                         });
                     }
                 })
@@ -376,15 +376,15 @@ let RestApi = function () {
                         if (found === 0) return res.status(404).json({error: "Student nije pronađen"});
 
                         let brojac = privilegije.length;
-                        if(brojac === 0) return res.status(200).json({privilegije: privileges});
+                        if (brojac === 0) return res.status(200).json({privilegije: privileges});
 
-                        for(let i in privilegije) {
+                        for (let i in privilegije) {
 
                             RestApi.GetWholePrivilege(privilegije[i].id, function (privilege, status, error) {
 
-                                if(!error) privileges.push(privilege);
+                                if (!error) privileges.push(privilege);
                                 brojac--;
-                                if(brojac === 0) return res.status(200).json({privilegije: privileges});
+                                if (brojac === 0) return res.status(200).json({privilegije: privileges});
                             });
                         }
                     });
@@ -403,15 +403,15 @@ let RestApi = function () {
                 .then(function (privilegije) {
 
                     let brojac = privilegije.length;
-                    if(brojac === 0) return res.status(200).json({privilegije: privileges});
+                    if (brojac === 0) return res.status(200).json({privilegije: privileges});
 
-                    for(let i in privilegije) {
+                    for (let i in privilegije) {
 
                         RestApi.GetWholePrivilege(privilegije[i].id, function (privilege, status, error) {
 
-                            if(!error) privileges.push(privilege);
+                            if (!error) privileges.push(privilege);
                             brojac--;
-                            if(brojac === 0) return res.status(200).json({privilegije: privileges});
+                            if (brojac === 0) return res.status(200).json({privilegije: privileges});
                         });
                     }
                 })
@@ -614,10 +614,12 @@ let RestApi = function () {
 
         DeleteEmailById: function (req, res) {
 
-            return db.Email.findOne({where: {
-                id: req.params.id,
-                osoba_id: res.userData.osoba_id
-            }})
+            return db.Email.findOne({
+                where: {
+                    id: req.params.id,
+                    osoba_id: res.userData.osoba_id
+                }
+            })
                 .then(function (email) {
 
                     if (!email) return res.status(404).json({error: "Nije pronađen e-mail"});
@@ -636,10 +638,12 @@ let RestApi = function () {
 
         EditEmailById: function (req, res) {
 
-            return db.Email.findOne({where: {
-                id: req.params.id,
-                osoba_id: res.userData.osoba_id
-            }})
+            return db.Email.findOne({
+                where: {
+                    id: req.params.id,
+                    osoba_id: res.userData.osoba_id
+                }
+            })
                 .then(function (email) {
 
                     if (!email) return res.status(404).json({error: "Nije pronađen e-mail"});
@@ -855,21 +859,41 @@ let RestApi = function () {
         },
 
         Login: function (req, res) {
-
             if (!req.body.username || !req.body.password)
                 return res.status(422).json({error: "Neispravni parametri"});
 
             return db.Nalog.findOne({where: {username: req.body.username}})
                 .then(function (user) {
-
-                    if (!user)
-                        return res.status(401).json({error: "Neispravan username ili password"});
-
-                    if (!bcrypt.compareSync(req.body.password, user.password, 10))
-                        return res.status(401).json({error: "Neispravan username ili password"});
-
-                    if (user.verified === 0 || user.verified === false)
-                        return res.status(401).json({error: "Niste verifikovani"});
+                    if (!user) {
+                        res.locals.rateLimiter.consume(req.ip)
+                            .then(() => {
+                                return res.status(401).json({error: "Neispravan username ili password"});
+                            })
+                            .catch((rejRes) => {
+                                const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+                                return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
+                            });
+                    }
+                    if (!bcrypt.compareSync(req.body.password, user.password, 10)) {
+                        res.locals.rateLimiter.consume(req.ip)
+                            .then(() => {
+                                return res.status(401).json({error: "Neispravan username ili password"});
+                            })
+                            .catch((rejRes) => {
+                                const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+                                return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
+                            });
+                    }
+                    if (user.verified === 0 || user.verified === false) {
+                        res.locals.rateLimiter.consume(req.ip)
+                            .then(() => {
+                                return res.status(401).json({error: "Niste verifikovani"});
+                            })
+                            .catch((rejRes) => {
+                                const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+                                return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
+                            });
+                    }
 
                     let vrste = [];
                     let promises = [];
@@ -877,16 +901,23 @@ let RestApi = function () {
                     db.Privilegije.findAll({where: {osoba_id: user.osoba_id}})
                         .then(function (privilegije) {
 
-                            if (privilegije.length === 0)
-                                return res.status(401).json({error: "Nemate privilegije"});
-
+                            if (privilegije.length === 0) {
+                                res.locals.rateLimiter.consume(req.ip)
+                                    .then(() => {
+                                        return res.status(401).json({error: "Nemate privilegije"});
+                                    })
+                                    .catch((rejRes) => {
+                                        const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+                                        return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
+                                    });
+                            }
                             for (let i in privilegije) {
-
                                 promises.push(
                                     db.VrstaKorisnika.findOne({
                                         where: {id: privilegije[i].vrsta_korisnika_id}
-                                        })
-                                    .then(function (vrsta) {vrste.push(vrsta.naziv);})
+                                    }).then(function (vrsta) {
+                                        vrste.push(vrsta.naziv);
+                                    })
                                 );
                             }
 
@@ -904,10 +935,13 @@ let RestApi = function () {
                                         {expiresIn: "1h"}
                                     );
 
-                                    return res.status(200).json({
-                                        message: "Prijava uspješna",
-                                        token: token
-                                    });
+                                    res.locals.rateLimiter.delete(req.ip)
+                                        .then(() => {
+                                            return res.status(200).json({
+                                                message: "Prijava uspješna",
+                                                token: token
+                                            });
+                                        });
                                 });
                         });
                 });
@@ -1067,13 +1101,13 @@ let RestApi = function () {
 
                     let brojac = izvjestaji.length;
 
-                    for(let i in izvjestaji) {
+                    for (let i in izvjestaji) {
 
                         RestApi.GetWholeReport(izvjestaji[i].id, function (report, status, error) {
 
-                            if(!error) reports.push(report);
+                            if (!error) reports.push(report);
                             brojac--;
-                            if(brojac === 0) return res.status(200).json({izvjestaji: reports});
+                            if (brojac === 0) return res.status(200).json({izvjestaji: reports});
                         });
                     }
                 })
@@ -1092,13 +1126,13 @@ let RestApi = function () {
 
                     let brojac = izvjestaji.length;
 
-                    for(let i in izvjestaji) {
+                    for (let i in izvjestaji) {
 
                         RestApi.GetWholeReport(izvjestaji[i].id, function (report, status, error) {
 
-                            if(!error) reports.push(report);
+                            if (!error) reports.push(report);
                             brojac--;
-                            if(brojac === 0) return res.status(200).json({izvjestaji: reports});
+                            if (brojac === 0) return res.status(200).json({izvjestaji: reports});
                         });
                     }
                 })
@@ -1171,7 +1205,7 @@ let RestApi = function () {
                 })
                 .catch(function (error) {
 
-                    if(error.status) return callback(null, error.status, error.message);
+                    if (error.status) return callback(null, error.status, error.message);
                     return callback(null, 500, error.message);
                 });
         },
@@ -1180,7 +1214,7 @@ let RestApi = function () {
 
             RestApi.GetWholePrivilege(req.params.id, function (privilege, status, error) {
 
-                if(error) return res.status(status).json({error: error});
+                if (error) return res.status(status).json({error: error});
                 return res.status(status).json({privilegija: privilege});
             });
         },
@@ -1613,7 +1647,7 @@ let RestApi = function () {
                 })
                 .catch(function (error) {
 
-                    if(error.status) return res.status(error.status).json({error: error.message});
+                    if (error.status) return res.status(error.status).json({error: error.message});
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -1651,7 +1685,7 @@ let RestApi = function () {
                 })
                 .catch(function (error) {
 
-                    if(error.status) return res.status(error.status).json({error: error.message});
+                    if (error.status) return res.status(error.status).json({error: error.message});
                     return res.status(500).json({error: error.message});
                 });
         },
@@ -2598,7 +2632,7 @@ let RestApi = function () {
 
             RestApi.GetWholeReport(req.params.id, function (report, status, error) {
 
-                if(error) res.status(status).json({error: error});
+                if (error) res.status(status).json({error: error});
                 return res.status(status).json({izvjestaj: report});
             });
         },
@@ -2773,7 +2807,7 @@ let RestApi = function () {
 
         RegisterPerson: function (req, res) {
 
-            if(!req.body.spol
+            if (!req.body.spol
                 || !req.body.ime
                 || !req.body.prezime
                 || !req.body.username
@@ -2961,8 +2995,7 @@ let RestApi = function () {
 
                                                 error = 1;
                                                 return res.status(404).json({error: "Spisak nije još kreiran"});
-                                            }
-                                            else {
+                                            } else {
 
                                                 sifreMapping[spisak.sifra_studenta] = spisak.ocjenjeni_id;
 
@@ -3071,9 +3104,7 @@ let RestApi = function () {
 
                                 return res.status(500).json({error: error.message});
                             });
-                    }
-
-                    else if (req.body.semestar_id === undefined && req.body.naziv !== undefined) {
+                    } else if (req.body.semestar_id === undefined && req.body.naziv !== undefined) {
 
                         db.Grupa.findOne({where: {naziv: req.body.naziv, semestar_id: grupa.semestar_id}})
                             .then(function (gr) {
@@ -3098,9 +3129,7 @@ let RestApi = function () {
 
                                 return res.status(500).json({error: error.message});
                             });
-                    }
-
-                    else if (req.body.semestar_id !== undefined && req.body.naziv !== undefined) {
+                    } else if (req.body.semestar_id !== undefined && req.body.naziv !== undefined) {
                         db.Grupa.findOne({where: {naziv: req.body.naziv, semestar_id: req.body.semestar_id}})
                             .then(function (gr) {
 
@@ -3124,9 +3153,7 @@ let RestApi = function () {
 
                                 return res.status(500).json({error: error.message});
                             });
-                    }
-
-                    else {
+                    } else {
 
                         grupa.update(req.body)
                             .then(function (value) {
@@ -3179,7 +3206,7 @@ let RestApi = function () {
 
         EditGroupsStudentsByGroupId: function (req, res) {
 
-            if(!req.body.studenti) return res.status(422).json({error: "Neispravni parametri"});
+            if (!req.body.studenti) return res.status(422).json({error: "Neispravni parametri"});
 
             return db.Grupa.findOne({where: {id: req.params.id}})
                 .then(function (grupa) {
@@ -3338,13 +3365,13 @@ let RestApi = function () {
 
                             let brojac = spiskovi.length;
 
-                            for(let i in spiskovi) {
+                            for (let i in spiskovi) {
 
                                 RestApi.GetListById(spiskovi[i].id, function (error, status, list) {
 
-                                    if(!error) lists.push(list);
+                                    if (!error) lists.push(list);
                                     brojac--;
-                                    if(brojac === 0) return res.status(200).json({spisak: lists});
+                                    if (brojac === 0) return res.status(200).json({spisak: lists});
                                 });
                             }
                         });
@@ -3369,13 +3396,13 @@ let RestApi = function () {
 
                             let brojac = spiskovi.length;
 
-                            for(let i in spiskovi) {
+                            for (let i in spiskovi) {
 
                                 RestApi.GetListById(spiskovi[i].id, function (error, status, list) {
 
-                                    if(!error) lists.push(list);
+                                    if (!error) lists.push(list);
                                     brojac--;
-                                    if(brojac === 0) return res.status(200).json({spisak: lists});
+                                    if (brojac === 0) return res.status(200).json({spisak: lists});
                                 });
                             }
                         });
@@ -3395,13 +3422,13 @@ let RestApi = function () {
 
                     let brojac = spiskovi.length;
 
-                    for(let i in spiskovi) {
+                    for (let i in spiskovi) {
 
                         RestApi.GetListById(spiskovi[i].id, function (error, status, list) {
 
-                            if(!error) lists.push(list);
+                            if (!error) lists.push(list);
                             brojac--;
-                            if(brojac === 0) return res.status(200).json({spiskovi: lists});
+                            if (brojac === 0) return res.status(200).json({spiskovi: lists});
                         });
                     }
                 })
@@ -3571,13 +3598,13 @@ let RestApi = function () {
 
                     let brojac = izvjestaji.length;
 
-                    for(let i in izvjestaji) {
+                    for (let i in izvjestaji) {
 
                         RestApi.GetWholeReport(izvjestaji[i].id, function (report, status, error) {
 
-                            if(!error) reports.push(report);
+                            if (!error) reports.push(report);
                             brojac--;
-                            if(brojac === 0) return res.status(200).json({izvjestaji: reports});
+                            if (brojac === 0) return res.status(200).json({izvjestaji: reports});
                         });
                     }
                 })
@@ -3646,9 +3673,7 @@ let RestApi = function () {
 
                                 return res.status(500).json({error: error.message});
                             });
-                    }
-
-                    else if (req.body.semestar_id === undefined && req.body.broj_spirale !== undefined) {
+                    } else if (req.body.semestar_id === undefined && req.body.broj_spirale !== undefined) {
 
                         db.Spirala.findOne({
                             where: {
@@ -3677,9 +3702,7 @@ let RestApi = function () {
 
                                 return res.status(500).json({error: error.message});
                             });
-                    }
-
-                    else if (req.body.semestar_id !== undefined && req.body.broj_spirale !== undefined) {
+                    } else if (req.body.semestar_id !== undefined && req.body.broj_spirale !== undefined) {
                         db.Spirala.findOne({
                             where: {
                                 broj_spirale: req.body.broj_spirale,
@@ -3707,9 +3730,7 @@ let RestApi = function () {
 
                                 return res.status(500).json({error: error.message});
                             });
-                    }
-
-                    else {
+                    } else {
                         spirala.update(req.body)
                             .then(function (value) {
 

@@ -5,11 +5,11 @@ var DbContext = function () {
 
     const sequelize = new Sequelize
     (
-        'sql11226233',
-        'sql11226233',
-        'KbUk6EZ2fI',
+        'ts',
+        'tsuser',
+        'HPZBookStudio15!',
         {
-            host: 'sql11.freemysqlhosting.net',
+            host: 'localhost',
             dialect: 'mysql',
             pool: {
                 max: 5,

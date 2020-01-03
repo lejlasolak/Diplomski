@@ -2,11 +2,13 @@ const router = require('express').Router();
 const RestApi = require('./api');
 
 const checkAuth = require('../middleware/check-auth');
+const loginMiddleware = require('../middleware/login-middleware');
 const studentAuth = checkAuth.checkStudent;
 const teacherAuth = checkAuth.checkTeacher;
 const adminAuth = checkAuth.checkAdmin;
 const auth = checkAuth.checkAuth;
 const studentTeacherAuth = checkAuth.checkStudentTeacher;
+const checkFailedLogin = loginMiddleware.loginMiddleware;
 
 /*----------------------------------VRSTE KORISNIKA------------------------------------*/
 
@@ -39,7 +41,7 @@ router.get('/nalozi/:id', adminAuth, RestApi.GetAccountById);
 
 /*-------------------------------------KORISNICI---------------------------------------*/
 
-router.post('/login', RestApi.Login);
+router.post('/login', checkFailedLogin, RestApi.Login);
 router.post('/register', RestApi.RegisterPerson);
 
 router.get('/korisnici/prijavljeniKorisnik', auth, RestApi.GetLoggedInUser);
