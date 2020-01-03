@@ -17,6 +17,6 @@
     "mysql2": "^1.6.1",
     "node-esapi": "0.0.1",
     "rate-limiter-flexible": "^1.2.2",
-    "sequelize": "^4.38.0"
+    "sequelize": "^5.15.1"
   }
 }
