@@ -79,7 +79,19 @@ let RestApi = function () {
                 if (privilegija) {
                     throw new Error("Korisnik već ima privilegiju");
                 }
-                return db.Privilegije.create(req.body);
+                return db.VrstaKorisnika.findOne({
+                    where: {
+                        id: req.body.vrsta_korisnika_id
+                    }
+                }).then(function (vrsta) {
+                    if (!vrsta) {
+                        throw new ErrorWithStatusCode("Nepostojeća vrsta korisnika", 404);
+                    }
+                    if (vrsta.naziv == "admin") {
+                        throw new ErrorWithStatusCode("Privilegija je administratorska, ne moze biti dodijeljena", 401);
+                    }
+                    return db.Privilegije.create(req.body);
+                });
             }).then(function () {
                 return res.status(201).json({message: "Uspješno dodana privilegija"});
             }).catch(function (error) {
@@ -93,20 +105,44 @@ let RestApi = function () {
                     if (!privilegija) {
                         return res.status(404).json({error: "Nije pronađena privilegija"});
                     }
-                    return db.Privilegije.findOne({
+                    return db.VrstaKorisnika.findOne({
                         where: {
-                            osoba_id: privilegija.osoba_id,
-                            vrsta_korisnika_id: req.body.vrsta_korisnika_id
+                            id: privilegija.vrsta_korisnika_id
                         }
-                    }).then(function (privilege) {
-                        if (privilege && privilege.id != req.params.id) {
-                            throw new Error("Korisnik već ima privilegiju");
+                    }).then(function (vrstaKorisnika) {
+                        if (!vrstaKorisnika) {
+                            throw new ErrorWithStatusCode("Privilegija nema vrstu korisnika", 404);
                         }
-                        privilegija.update(req.body)
-                            .then(function () {
-                                return res.status(200).json({message: "Uspješno izmijenjena privilegija"});
+                        if (vrstaKorisnika.naziv == "admin") {
+                            throw new ErrorWithStatusCode("Privilegija je administratorska, ne moze biti promijenjena", 401);
+                        }
+                        return db.Privilegije.findOne({
+                            where: {
+                                osoba_id: privilegija.osoba_id,
+                                vrsta_korisnika_id: req.body.vrsta_korisnika_id
+                            }
+                        }).then(function (privilege) {
+                            if (privilege && privilege.id != req.params.id) {
+                                throw new Error("Korisnik već ima privilegiju");
+                            }
+                            return db.VrstaKorisnika.findOne({
+                                where: {
+                                    id: req.body.vrsta_korisnika_id
+                                }
+                            }).then(function (vrsta) {
+                                if (!vrsta) {
+                                    throw new ErrorWithStatusCode("Nepostojeća vrsta korisnika", 404);
+                                }
+                                if (vrsta.naziv == "admin") {
+                                    throw new ErrorWithStatusCode("Privilegija je administratorska, ne moze biti dodijeljena", 401);
+                                }
+                                return privilegija.update(req.body)
+                                    .then(function () {
+                                        return res.status(200).json({message: "Uspješno izmijenjena privilegija"});
+                                    });
                             });
-                    })
+                        })
+                    });
                 })
                 .catch(function (error) {
                     return res.status(500).json({error: error.message});
@@ -119,10 +155,22 @@ let RestApi = function () {
                     if (!privilegija) {
                         return res.status(404).json({error: "Nije pronađena privilegija"});
                     }
-                    privilegija.destroy()
-                        .then(function () {
-                            return res.status(200).json({message: "Uspješno obrisana privilegija"});
-                        });
+                    return db.VrstaKorisnika.findOne({
+                        where: {
+                            id: privilegija.vrsta_korisnika_id
+                        }
+                    }).then(function (vrstaKorisnika) {
+                        if (!vrstaKorisnika) {
+                            throw new ErrorWithStatusCode("Privilegija nema vrstu korisnika", 404);
+                        }
+                        if (vrstaKorisnika.naziv == "admin") {
+                            throw new ErrorWithStatusCode("Privilegija je administratorska, ne moze biti obrisana", 401);
+                        }
+                        return privilegija.destroy()
+                            .then(function () {
+                                return res.status(200).json({message: "Uspješno obrisana privilegija"});
+                            });
+                    });
                 })
                 .catch(function (error) {
                     return res.status(500).json({error: error.message});
@@ -2056,10 +2104,31 @@ let RestApi = function () {
                     if (!user) {
                         return res.status(404).json({error: "Nepostojeći korisnik"});
                     }
-                    return user.update({verified: verify})
-                        .then(function () {
-                            return res.status(200).json({message: "Uspješna promjena verifikacije"});
+                    return db.Privilegije.findOne({
+                        where: {
+                            osoba_id: user.id
+                        }
+                    }).then(function (privilegija) {
+                        if (!privilegija) {
+                            throw new ErrorWithStatusCode("Korisnik nema privilegiju", 404);
+                        }
+                        return db.VrstaKorisnika.findOne({
+                            where: {
+                                id: privilegija.vrsta_korisnika_id
+                            }
+                        }).then(function (vrstaKorisnika) {
+                            if (!vrstaKorisnika) {
+                                throw new ErrorWithStatusCode("Privilegija nema vrstu korisnika", 404);
+                            }
+                            if (vrstaKorisnika.naziv == "admin") {
+                                throw new ErrorWithStatusCode("Korisnik je admin, ne moze se mijenjati status verifikacije", 401);
+                            }
+                            return user.update({verified: verify})
+                                .then(function () {
+                                    return res.status(200).json({message: "Uspješna promjena verifikacije"});
+                                });
                         });
+                    })
                 })
                 .catch(function (err) {
                     return res.status(500).json({error: err.message});
@@ -2072,46 +2141,66 @@ let RestApi = function () {
                     if (!osoba) {
                         throw new ErrorWithStatusCode("Nepostojeći korisnik", 404);
                     }
-                    return osoba.destroy();
-                })
-                .then(function () {
-                    return db.Nalog.destroy({where: {osoba_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Privilegije.destroy({where: {osoba_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Email.destroy({where: {osoba_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Repozitorij.destroy({where: {student_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Izvjestaj.destroy({where: {student_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Review.destroy({where: {ocjenjivac_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Review.destroy({where: {ocjenjeni_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Spisak.destroy({where: {ocjenjivac_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.Spisak.destroy({where: {ocjenjeni_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.IspitBodovi.destroy({where: {student_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.SpiralaBodovi.destroy({where: {student_id: req.params.id}});
-                })
-                .then(function () {
-                    return db.StudentGrupa.destroy({where: {student_id: req.params.id}});
-                })
-                .then(function () {
-                    return res.status(200).json({message: "Uspješno obrisan korisnik"});
+                    return db.Privilegije.findOne({
+                        where: {
+                            osoba_id: osoba.id
+                        }
+                    }).then(function (privilegija) {
+                        if (!privilegija) {
+                            throw new ErrorWithStatusCode("Korisnik nema privilegiju", 404);
+                        }
+                        return db.VrstaKorisnika.findOne({
+                            where: {
+                                id: privilegija.vrsta_korisnika_id
+                            }
+                        }).then(function (vrstaKorisnika) {
+                            if (!vrstaKorisnika) {
+                                throw new ErrorWithStatusCode("Privilegija nema vrstu korisnika", 404);
+                            }
+                            if (vrstaKorisnika.naziv == "admin") {
+                                throw new ErrorWithStatusCode("Korisnik je admin, ne moze biti obrisan", 401);
+                            }
+                            return osoba.destroy();
+                        }).then(function () {
+                            return db.Nalog.destroy({where: {osoba_id: req.params.id}});
+                        })
+                            .then(function () {
+                                return db.Privilegije.destroy({where: {osoba_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Email.destroy({where: {osoba_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Repozitorij.destroy({where: {student_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Izvjestaj.destroy({where: {student_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Review.destroy({where: {ocjenjivac_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Review.destroy({where: {ocjenjeni_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Spisak.destroy({where: {ocjenjivac_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.Spisak.destroy({where: {ocjenjeni_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.IspitBodovi.destroy({where: {student_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.SpiralaBodovi.destroy({where: {student_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return db.StudentGrupa.destroy({where: {student_id: req.params.id}});
+                            })
+                            .then(function () {
+                                return res.status(200).json({message: "Uspješno obrisan korisnik"});
+                            });
+                    });
                 })
                 .catch(function (err) {
                     if (err.status) {
