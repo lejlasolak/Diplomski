@@ -809,6 +809,7 @@ let RestApi = function () {
                                 const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
                                 return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
                             });
+                        return;
                     }
                     if (!bcrypt.compareSync(req.body.password, user.password, 10)) {
                         res.locals.rateLimiter.consume(req.ip)
@@ -819,6 +820,7 @@ let RestApi = function () {
                                 const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
                                 return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
                             });
+                        return;
                     }
                     if (user.verified === 0 || user.verified === false) {
                         res.locals.rateLimiter.consume(req.ip)
@@ -829,6 +831,7 @@ let RestApi = function () {
                                 const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
                                 return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
                             });
+                        return;
                     }
                     let vrste = [];
                     let promises = [];
@@ -843,6 +846,7 @@ let RestApi = function () {
                                         const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
                                         return res.set('Retry-After', String(secs)).status(429).json({error: 'Neuspješan pokušaj logovanja 3 puta. Pokušajte ponovo nakon ' + secs + " sekundi"});
                                     });
+                                return;
                             }
                             for (let i in privilegije) {
                                 promises.push(
